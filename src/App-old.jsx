@@ -30,7 +30,6 @@ const THEMES = {
     tableRowOdd: "#0D1B2A",
     tableHeader: "#081521",
     totalRow: "#0F2340",
-    emptyCell: "#1E3A5A",
   },
   light: {
     bg: "#F8FAFC",
@@ -58,7 +57,6 @@ const THEMES = {
     tableRowOdd: "#F8FAFC",
     tableHeader: "#F1F5F9",
     totalRow: "#E2E8F0",
-    emptyCell: "#CBD5E1",
   },
 };
 
@@ -150,16 +148,24 @@ async function buildXlsx(rows) {
     const aoa = [];
     const merges = [];
 
+    // Title row
     aoa.push([`${comp}  |  ${epicNum}`]);
     merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: COLS.length - 1 } });
 
     statuses.forEach(status => {
+      // Status header row
       aoa.push([`◆  ${status.toUpperCase()}`]);
       merges.push({ s: { r: aoa.length - 1, c: 0 }, e: { r: aoa.length - 1, c: COLS.length - 1 } });
+
+      // Column header row
       aoa.push(COLS);
+
+      // Data rows
       grp.filter(r => r.Status === status).forEach(r => {
         aoa.push(COLS.map(c => r[c] || ""));
       });
+
+      // Blank gap
       aoa.push([]);
     });
 
@@ -253,6 +259,7 @@ function PivotTable({ rows, theme }) {
 
   return (
     <div style={{ fontFamily: "'DM Mono', monospace" }}>
+      {/* Controls */}
       <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ display: "flex", gap: 0, border: `1px solid ${theme.borderLight}`, borderRadius: "6px", overflow: "hidden" }}>
           {["status", "owner"].map(m => (
@@ -284,30 +291,31 @@ function PivotTable({ rows, theme }) {
         </span>
       </div>
 
+      {/* Ticket drill-down modal */}
       {expandedTickets && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}
           onClick={() => setExpandedTickets(null)}>
-          <div style={{ background: theme.bgModal, border: `1px solid ${theme.border}`, borderRadius: "10px", padding: "24px", maxWidth: "800px", width: "90%", maxHeight: "80vh", overflow: "auto", transition: "all 0.3s ease" }}
+          <div style={{ background: "#0D1B2A", border: "1px solid #1E3A5A", borderRadius: "10px", padding: "24px", maxWidth: "800px", width: "90%", maxHeight: "80vh", overflow: "auto" }}
             onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <span style={{ color: theme.accent, fontFamily: "inherit", fontSize: "12px", letterSpacing: "0.08em" }}>{expandedTickets.label} — {expandedTickets.tickets.length} tickets</span>
-              <button onClick={() => setExpandedTickets(null)} style={{ background: "none", border: "none", color: theme.textSecondary, cursor: "pointer", fontSize: "18px" }}>✕</button>
+              <span style={{ color: "#E8D5B0", fontFamily: "inherit", fontSize: "12px", letterSpacing: "0.08em" }}>{expandedTickets.label} — {expandedTickets.tickets.length} tickets</span>
+              <button onClick={() => setExpandedTickets(null)} style={{ background: "none", border: "none", color: "#7A9BB5", cursor: "pointer", fontSize: "18px" }}>✕</button>
             </div>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px", fontFamily: "inherit" }}>
               <thead>
                 <tr>{["Key", "Summary", "Status", "Assignee"].map(h => (
-                  <th key={h} style={{ textAlign: "left", padding: "6px 10px", color: theme.textTertiary, borderBottom: `1px solid ${theme.border}`, letterSpacing: "0.06em", fontSize: "10px", textTransform: "uppercase" }}>{h}</th>
+                  <th key={h} style={{ textAlign: "left", padding: "6px 10px", color: "#4A7FA5", borderBottom: "1px solid #1E3A5A", letterSpacing: "0.06em", fontSize: "10px", textTransform: "uppercase" }}>{h}</th>
                 ))}</tr>
               </thead>
               <tbody>
                 {expandedTickets.tickets.map((t, i) => {
                   const pal = STATUS_PALETTE[t.Status] || { bg: "#1A2B3C", text: "#aaa" };
                   return (
-                    <tr key={i} style={{ borderBottom: `1px solid ${theme.borderLight}` }}>
-                      <td style={{ padding: "6px 10px", color: theme.accentSecondary, whiteSpace: "nowrap" }}>{t.Key}</td>
-                      <td style={{ padding: "6px 10px", color: theme.text, maxWidth: "300px" }}>{t.Summary}</td>
+                    <tr key={i} style={{ borderBottom: "1px solid #0A1520" }}>
+                      <td style={{ padding: "6px 10px", color: "#7AB8E0", whiteSpace: "nowrap" }}>{t.Key}</td>
+                      <td style={{ padding: "6px 10px", color: "#C8D8E8", maxWidth: "300px" }}>{t.Summary}</td>
                       <td style={{ padding: "6px 10px" }}><span style={{ background: pal.bg, color: pal.text, padding: "2px 8px", borderRadius: "4px", fontSize: "10px", whiteSpace: "nowrap" }}>{t.Status}</span></td>
-                      <td style={{ padding: "6px 10px", color: theme.textSecondary, whiteSpace: "nowrap" }}>{t.Assignee}</td>
+                      <td style={{ padding: "6px 10px", color: "#8AABB5", whiteSpace: "nowrap" }}>{t.Assignee}</td>
                     </tr>
                   );
                 })}
@@ -318,15 +326,15 @@ function PivotTable({ rows, theme }) {
       )}
 
       {pivotMode === "status" ? (
-        <StatusPivot rows={filtered} statuses={statuses} epicLinks={epicLinks} onCellClick={setExpandedTickets} theme={theme} />
+        <StatusPivot rows={filtered} statuses={statuses} epicLinks={epicLinks} onCellClick={setExpandedTickets} />
       ) : (
-        <OwnerPivot rows={filtered} statuses={statuses} owners={owners} onCellClick={setExpandedTickets} theme={theme} />
+        <OwnerPivot rows={filtered} statuses={statuses} owners={owners} onCellClick={setExpandedTickets} />
       )}
     </div>
   );
 }
 
-function StatusPivot({ rows, statuses, epicLinks, onCellClick, theme }) {
+function StatusPivot({ rows, statuses, epicLinks, onCellClick }) {
   const epicRowData = useMemo(() => epicLinks.map(el => {
     const { epicNum, comp } = parseEpicInfo(el);
     const grp = rows.filter(r => (r["Epic Link"] || "") === el);
@@ -337,39 +345,27 @@ function StatusPivot({ rows, statuses, epicLinks, onCellClick, theme }) {
 
   const totals = statuses.map(s => rows.filter(r => r.Status === s));
 
-  const thStyle = (bold = false) => ({
-    background: theme.tableHeader, color: theme.textTertiary, padding: "8px 12px", textAlign: "left",
-    letterSpacing: "0.08em", fontSize: "10px", textTransform: "uppercase",
-    borderBottom: `1px solid ${theme.border}`, fontWeight: bold ? "700" : "500", whiteSpace: "nowrap",
-    transition: "all 0.3s ease"
-  });
-
-  const tdStyle = { 
-    padding: "6px 12px", borderBottom: `1px solid ${theme.borderLight}`, verticalAlign: "middle", fontSize: "11px",
-    transition: "all 0.3s ease"
-  };
-
   return (
     <div style={{ overflowX: "auto" }}>
       <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "11px", fontFamily: "'DM Mono',monospace" }}>
         <thead>
           <tr>
-            <th style={thStyle(true)}>Epic</th>
-            <th style={thStyle(true)}>Component</th>
+            <th style={thStyle("#081521", true)}>Epic</th>
+            <th style={thStyle("#081521", true)}>Component</th>
             {statuses.map(s => {
               const pal = STATUS_PALETTE[s] || { bg: "#1A2B3C", text: "#aaa" };
-              return <th key={s} style={{ ...thStyle(), writingMode: "vertical-rl", transform: "rotate(180deg)", height: "90px", verticalAlign: "bottom", padding: "8px 6px" }}>
+              return <th key={s} style={{ ...thStyle("#081521"), writingMode: "vertical-rl", transform: "rotate(180deg)", height: "90px", verticalAlign: "bottom", padding: "8px 6px" }}>
                 <span style={{ background: pal.bg, color: pal.text, padding: "2px 6px", borderRadius: "3px", fontSize: "9px", whiteSpace: "nowrap" }}>{s}</span>
               </th>;
             })}
-            <th style={thStyle(true)}>Total</th>
+            <th style={thStyle("#081521", true)}>Total</th>
           </tr>
         </thead>
         <tbody>
           {epicRowData.map(({ el, epicNum, comp, grp, counts }, ri) => (
-            <tr key={el} style={{ background: ri % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd, transition: "background 0.3s ease" }}>
-              <td style={{ ...tdStyle, color: theme.accentSecondary, whiteSpace: "nowrap", fontSize: "10px" }}>{epicNum || "—"}</td>
-              <td style={{ ...tdStyle, color: theme.text, maxWidth: "220px", wordBreak: "break-word" }}>{comp}</td>
+            <tr key={el} style={{ background: ri % 2 === 0 ? "#0A1520" : "#0D1B2A" }}>
+              <td style={{ ...tdStyle, color: "#7AB8E0", whiteSpace: "nowrap", fontSize: "10px" }}>{epicNum || "—"}</td>
+              <td style={{ ...tdStyle, color: "#C8D8E8", maxWidth: "220px", wordBreak: "break-word" }}>{comp}</td>
               {counts.map((tickets, si) => (
                 <td key={si} style={{ ...tdStyle, textAlign: "center", cursor: tickets.length > 0 ? "pointer" : "default" }}
                   onClick={() => tickets.length > 0 && onCellClick({
@@ -382,21 +378,21 @@ function StatusPivot({ rows, statuses, epicLinks, onCellClick, theme }) {
                       padding: "2px 8px", borderRadius: "12px", fontWeight: "600", fontSize: "11px",
                       cursor: "pointer", transition: "opacity 0.15s"
                     }}>{tickets.length}</span>
-                  ) : <span style={{ color: theme.emptyCell }}>·</span>}
+                  ) : <span style={{ color: "#1E3A5A" }}>·</span>}
                 </td>
               ))}
-              <td style={{ ...tdStyle, textAlign: "center", fontWeight: "700", color: theme.accent }}>{grp.length}</td>
+              <td style={{ ...tdStyle, textAlign: "center", fontWeight: "700", color: "#E8D5B0" }}>{grp.length}</td>
             </tr>
           ))}
-          <tr style={{ background: theme.totalRow, borderTop: `2px solid ${theme.borderLight}`, transition: "background 0.3s ease" }}>
-            <td colSpan={2} style={{ ...tdStyle, fontWeight: "700", color: theme.accent, letterSpacing: "0.06em", fontSize: "10px" }}>TOTAL</td>
+          <tr style={{ background: "#0F2340", borderTop: "2px solid #2A3D5A" }}>
+            <td colSpan={2} style={{ ...tdStyle, fontWeight: "700", color: "#E8D5B0", letterSpacing: "0.06em", fontSize: "10px" }}>TOTAL</td>
             {totals.map((tickets, si) => (
-              <td key={si} style={{ ...tdStyle, textAlign: "center", fontWeight: "700", color: theme.accent, cursor: tickets.length > 0 ? "pointer" : "default" }}
+              <td key={si} style={{ ...tdStyle, textAlign: "center", fontWeight: "700", color: "#E8D5B0", cursor: tickets.length > 0 ? "pointer" : "default" }}
                 onClick={() => tickets.length > 0 && onCellClick({ label: statuses[si], tickets })}>
                 {tickets.length || "·"}
               </td>
             ))}
-            <td style={{ ...tdStyle, textAlign: "center", fontWeight: "800", color: theme.accent }}>{rows.length}</td>
+            <td style={{ ...tdStyle, textAlign: "center", fontWeight: "800", color: "#E8D5B0" }}>{rows.length}</td>
           </tr>
         </tbody>
       </table>
@@ -404,7 +400,7 @@ function StatusPivot({ rows, statuses, epicLinks, onCellClick, theme }) {
   );
 }
 
-function OwnerPivot({ rows, statuses, owners, onCellClick, theme }) {
+function OwnerPivot({ rows, statuses, owners, onCellClick }) {
   const ownerData = useMemo(() => owners.map(owner => {
     const grp = rows.filter(r => (r.Assignee || "Unassigned") === owner);
     if (grp.length === 0) return null;
@@ -414,37 +410,25 @@ function OwnerPivot({ rows, statuses, owners, onCellClick, theme }) {
 
   const totals = statuses.map(s => rows.filter(r => r.Status === s));
 
-  const thStyle = (bold = false) => ({
-    background: theme.tableHeader, color: theme.textTertiary, padding: "8px 12px", textAlign: "left",
-    letterSpacing: "0.08em", fontSize: "10px", textTransform: "uppercase",
-    borderBottom: `1px solid ${theme.border}`, fontWeight: bold ? "700" : "500", whiteSpace: "nowrap",
-    transition: "all 0.3s ease"
-  });
-
-  const tdStyle = { 
-    padding: "6px 12px", borderBottom: `1px solid ${theme.borderLight}`, verticalAlign: "middle", fontSize: "11px",
-    transition: "all 0.3s ease"
-  };
-
   return (
     <div style={{ overflowX: "auto" }}>
       <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "11px", fontFamily: "'DM Mono',monospace" }}>
         <thead>
           <tr>
-            <th style={thStyle(true)}>Assignee</th>
+            <th style={thStyle("#081521", true)}>Assignee</th>
             {statuses.map(s => {
               const pal = STATUS_PALETTE[s] || { bg: "#1A2B3C", text: "#aaa" };
-              return <th key={s} style={{ ...thStyle(), writingMode: "vertical-rl", transform: "rotate(180deg)", height: "90px", verticalAlign: "bottom", padding: "8px 6px" }}>
+              return <th key={s} style={{ ...thStyle("#081521"), writingMode: "vertical-rl", transform: "rotate(180deg)", height: "90px", verticalAlign: "bottom", padding: "8px 6px" }}>
                 <span style={{ background: pal.bg, color: pal.text, padding: "2px 6px", borderRadius: "3px", fontSize: "9px", whiteSpace: "nowrap" }}>{s}</span>
               </th>;
             })}
-            <th style={thStyle(true)}>Total</th>
+            <th style={thStyle("#081521", true)}>Total</th>
           </tr>
         </thead>
         <tbody>
           {ownerData.map(({ owner, grp, counts }, ri) => (
-            <tr key={owner} style={{ background: ri % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd, transition: "background 0.3s ease" }}>
-              <td style={{ ...tdStyle, color: theme.textSecondary, whiteSpace: "nowrap" }}>{owner}</td>
+            <tr key={owner} style={{ background: ri % 2 === 0 ? "#0A1520" : "#0D1B2A" }}>
+              <td style={{ ...tdStyle, color: "#8AABB5", whiteSpace: "nowrap" }}>{owner}</td>
               {counts.map((tickets, si) => (
                 <td key={si} style={{ ...tdStyle, textAlign: "center", cursor: tickets.length > 0 ? "pointer" : "default" }}
                   onClick={() => tickets.length > 0 && onCellClick({ label: `${owner} / ${statuses[si]}`, tickets })}>
@@ -454,21 +438,21 @@ function OwnerPivot({ rows, statuses, owners, onCellClick, theme }) {
                       color: STATUS_PALETTE[statuses[si]]?.text || "#aaa",
                       padding: "2px 8px", borderRadius: "12px", fontWeight: "600", fontSize: "11px"
                     }}>{tickets.length}</span>
-                  ) : <span style={{ color: theme.emptyCell }}>·</span>}
+                  ) : <span style={{ color: "#1E3A5A" }}>·</span>}
                 </td>
               ))}
-              <td style={{ ...tdStyle, textAlign: "center", fontWeight: "700", color: theme.accent }}>{grp.length}</td>
+              <td style={{ ...tdStyle, textAlign: "center", fontWeight: "700", color: "#E8D5B0" }}>{grp.length}</td>
             </tr>
           ))}
-          <tr style={{ background: theme.totalRow, borderTop: `2px solid ${theme.borderLight}`, transition: "background 0.3s ease" }}>
-            <td style={{ ...tdStyle, fontWeight: "700", color: theme.accent, letterSpacing: "0.06em", fontSize: "10px" }}>TOTAL</td>
+          <tr style={{ background: "#0F2340", borderTop: "2px solid #2A3D5A" }}>
+            <td style={{ ...tdStyle, fontWeight: "700", color: "#E8D5B0", letterSpacing: "0.06em", fontSize: "10px" }}>TOTAL</td>
             {totals.map((tickets, si) => (
               <td key={si} onClick={() => tickets.length > 0 && onCellClick({ label: statuses[si], tickets })}
-                style={{ ...tdStyle, textAlign: "center", fontWeight: "700", color: theme.accent, cursor: tickets.length > 0 ? "pointer" : "default" }}>
+                style={{ ...tdStyle, textAlign: "center", fontWeight: "700", color: "#E8D5B0", cursor: tickets.length > 0 ? "pointer" : "default" }}>
                 {tickets.length || "·"}
               </td>
             ))}
-            <td style={{ ...tdStyle, textAlign: "center", fontWeight: "800", color: theme.accent }}>{rows.length}</td>
+            <td style={{ ...tdStyle, textAlign: "center", fontWeight: "800", color: "#E8D5B0" }}>{rows.length}</td>
           </tr>
         </tbody>
       </table>
@@ -476,9 +460,20 @@ function OwnerPivot({ rows, statuses, owners, onCellClick, theme }) {
   );
 }
 
+const selectStyle = {
+  background: "#0A1520", border: "1px solid #2A3D5A", color: "#7A9BB5",
+  padding: "5px 10px", borderRadius: "6px", fontSize: "11px", fontFamily: "'DM Mono',monospace", cursor: "pointer"
+};
+const thStyle = (bg, bold = false) => ({
+  background: bg, color: "#4A7FA5", padding: "8px 12px", textAlign: "left",
+  letterSpacing: "0.08em", fontSize: "10px", textTransform: "uppercase",
+  borderBottom: "1px solid #1E3A5A", fontWeight: bold ? "700" : "500", whiteSpace: "nowrap"
+});
+const tdStyle = { padding: "6px 12px", borderBottom: "1px solid #0A1520", verticalAlign: "middle", fontSize: "11px" };
+
 // ─── ticket list view ──────────────────────────────────────────────────────────
 
-function TicketList({ rows, theme }) {
+function TicketList({ rows }) {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterEpic, setFilterEpic] = useState("all");
@@ -501,48 +496,30 @@ function TicketList({ rows, theme }) {
     });
   }, [rows, filterStatus, filterEpic, search, sortKey]);
 
-  const selectStyleThemed = {
-    background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, color: theme.textSecondary,
-    padding: "5px 10px", borderRadius: "6px", fontSize: "11px", fontFamily: "'DM Mono',monospace", cursor: "pointer",
-    transition: "all 0.3s ease"
-  };
-
-  const thStyle = (bold = false) => ({
-    background: theme.tableHeader, color: theme.textTertiary, padding: "8px 12px", textAlign: "left",
-    letterSpacing: "0.08em", fontSize: "10px", textTransform: "uppercase",
-    borderBottom: `1px solid ${theme.border}`, fontWeight: bold ? "700" : "500", whiteSpace: "nowrap",
-    transition: "all 0.3s ease"
-  });
-
-  const tdStyle = { 
-    padding: "6px 12px", borderBottom: `1px solid ${theme.borderLight}`, verticalAlign: "middle", fontSize: "11px",
-    transition: "all 0.3s ease"
-  };
-
   return (
     <div>
       <div style={{ display: "flex", gap: "10px", marginBottom: "16px", flexWrap: "wrap", alignItems: "center" }}>
         <input placeholder="Search key, summary, assignee…" value={search} onChange={e => setSearch(e.target.value)}
-          style={{ ...selectStyleThemed, width: "260px", outline: "none" }} />
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={selectStyleThemed}>
+          style={{ ...selectStyle, width: "260px", outline: "none" }} />
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={selectStyle}>
           <option value="all">All Statuses</option>
           {statuses.map(s => <option key={s}>{s}</option>)}
         </select>
-        <select value={filterEpic} onChange={e => setFilterEpic(e.target.value)} style={selectStyleThemed}>
+        <select value={filterEpic} onChange={e => setFilterEpic(e.target.value)} style={selectStyle}>
           <option value="all">All Epics</option>
           {epicLinks.map(el => { const { epicNum, comp } = parseEpicInfo(el); return <option key={el} value={el}>{epicNum ? `${epicNum} – ${comp}` : comp}</option>; })}
         </select>
-        <select value={sortKey} onChange={e => setSortKey(e.target.value)} style={selectStyleThemed}>
+        <select value={sortKey} onChange={e => setSortKey(e.target.value)} style={selectStyle}>
           {["Status", "Key", "Assignee"].map(k => <option key={k}>Sort: {k}</option>)}
         </select>
-        <span style={{ color: theme.textTertiary, fontSize: "11px", fontFamily: "'DM Mono',monospace" }}>{filtered.length} tickets</span>
+        <span style={{ color: "#4A7FA5", fontSize: "11px", fontFamily: "'DM Mono',monospace" }}>{filtered.length} tickets</span>
       </div>
       <div style={{ overflowX: "auto" }}>
         <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "11px", fontFamily: "'DM Mono',monospace" }}>
           <thead>
             <tr>
               {["Key", "Summary", "Status", "Assignee", "Epic", "Start Date", "Dev End date", "QA End Date"].map(h => (
-                <th key={h} style={thStyle(true)}>{h}</th>
+                <th key={h} style={thStyle("#081521", true)}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -551,17 +528,17 @@ function TicketList({ rows, theme }) {
               const { epicNum, comp } = parseEpicInfo(t["Epic Link"] || "");
               const pal = STATUS_PALETTE[t.Status] || { bg: "#1A2B3C", text: "#aaa" };
               return (
-                <tr key={i} style={{ background: i % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd, transition: "background 0.1s" }}
-                  onMouseEnter={e => e.currentTarget.style.background = theme.bgHover}
-                  onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd}>
-                  <td style={{ ...tdStyle, color: theme.accentSecondary, whiteSpace: "nowrap", fontWeight: "600" }}>{t.Key}</td>
-                  <td style={{ ...tdStyle, color: theme.text, maxWidth: "320px" }}>{t.Summary}</td>
+                <tr key={i} style={{ background: i % 2 === 0 ? "#0A1520" : "#0D1B2A", transition: "background 0.1s" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#112030"}
+                  onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? "#0A1520" : "#0D1B2A"}>
+                  <td style={{ ...tdStyle, color: "#7AB8E0", whiteSpace: "nowrap", fontWeight: "600" }}>{t.Key}</td>
+                  <td style={{ ...tdStyle, color: "#C8D8E8", maxWidth: "320px" }}>{t.Summary}</td>
                   <td style={{ ...tdStyle, whiteSpace: "nowrap" }}><span style={{ background: pal.bg, color: pal.text, padding: "2px 8px", borderRadius: "4px", fontSize: "10px" }}>{t.Status}</span></td>
-                  <td style={{ ...tdStyle, color: theme.textSecondary, whiteSpace: "nowrap" }}>{t.Assignee || "—"}</td>
-                  <td style={{ ...tdStyle, color: theme.textTertiary, whiteSpace: "nowrap", fontSize: "10px" }}>{epicNum || comp.slice(0, 20)}</td>
-                  <td style={{ ...tdStyle, color: theme.textMuted, whiteSpace: "nowrap" }}>{t["Start Date"] || "—"}</td>
-                  <td style={{ ...tdStyle, color: theme.textMuted, whiteSpace: "nowrap" }}>{t["Dev End date"] || "—"}</td>
-                  <td style={{ ...tdStyle, color: theme.textMuted, whiteSpace: "nowrap" }}>{t["QA End Date"] || "—"}</td>
+                  <td style={{ ...tdStyle, color: "#8AABB5", whiteSpace: "nowrap" }}>{t.Assignee || "—"}</td>
+                  <td style={{ ...tdStyle, color: "#4A7FA5", whiteSpace: "nowrap", fontSize: "10px" }}>{epicNum || comp.slice(0, 20)}</td>
+                  <td style={{ ...tdStyle, color: "#596B7A", whiteSpace: "nowrap" }}>{t["Start Date"] || "—"}</td>
+                  <td style={{ ...tdStyle, color: "#596B7A", whiteSpace: "nowrap" }}>{t["Dev End date"] || "—"}</td>
+                  <td style={{ ...tdStyle, color: "#596B7A", whiteSpace: "nowrap" }}>{t["QA End Date"] || "—"}</td>
                 </tr>
               );
             })}
@@ -581,9 +558,6 @@ export default function App() {
   const [tab, setTab] = useState("pivot");
   const [generating, setGenerating] = useState(false);
   const [fileName, setFileName] = useState("");
-  const [themeMode, setThemeMode] = useState("dark");
-
-  const theme = THEMES[themeMode];
 
   const handleFile = useCallback(async (file) => {
     if (!file) return;
@@ -642,54 +616,44 @@ export default function App() {
 
   return (
     <div style={{
-      minHeight: "100vh", background: theme.bg,
-      fontFamily: "'DM Mono', monospace", color: theme.text,
-      padding: "0", transition: "background 0.3s ease, color 0.3s ease"
+      minHeight: "100vh", background: "#060E18",
+      fontFamily: "'DM Mono', monospace", color: "#C8D8E8",
+      padding: "0"
     }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Syne:wght@600;700;800&display=swap');
         * { box-sizing: border-box; }
         ::-webkit-scrollbar { width:6px; height:6px; }
-        ::-webkit-scrollbar-track { background:${theme.scrollbarTrack}; transition: background 0.3s ease; }
-        ::-webkit-scrollbar-thumb { background:${theme.scrollbarThumb}; border-radius:3px; transition: background 0.3s ease; }
-        input:focus { border-color:${theme.inputFocus} !important; }
-        select option { background:${theme.bgQuaternary}; }
+        ::-webkit-scrollbar-track { background:#060E18; }
+        ::-webkit-scrollbar-thumb { background:#1E3A5A; border-radius:3px; }
+        input:focus { border-color:#4A7FA5 !important; }
+        select option { background:#0D1B2A; }
       `}</style>
 
       {/* Header */}
-      <div style={{ background: theme.bgSecondary, borderBottom: `1px solid ${theme.border}`, padding: "16px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", transition: "all 0.3s ease" }}>
+      <div style={{ background: "#081521", borderBottom: "1px solid #1E3A5A", padding: "16px 32px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
-          <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "20px", color: theme.accent, letterSpacing: "-0.02em" }}>NGSB</span>
-          <span style={{ color: theme.borderLight, fontSize: "18px" }}>|</span>
-          <span style={{ fontSize: "12px", color: theme.textTertiary, letterSpacing: "0.1em", textTransform: "uppercase" }}>Jira Sprint Processor</span>
+          <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "20px", color: "#E8D5B0", letterSpacing: "-0.02em" }}>NGSB</span>
+          <span style={{ color: "#2A3D5A", fontSize: "18px" }}>|</span>
+          <span style={{ fontSize: "12px", color: "#4A7FA5", letterSpacing: "0.1em", textTransform: "uppercase" }}>Jira Sprint Processor</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <button onClick={() => setThemeMode(themeMode === "dark" ? "light" : "dark")} style={{
-            background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, color: theme.textSecondary,
-            padding: "7px 14px", borderRadius: "6px", cursor: "pointer", fontSize: "16px", fontFamily: "inherit",
-            transition: "all 0.3s ease", display: "flex", alignItems: "center", gap: "6px"
-          }} title={`Switch to ${themeMode === "dark" ? "light" : "dark"} mode`}>
-            {themeMode === "dark" ? "☀️" : "🌙"}
-          </button>
-          {rows && (
-            <>
-              <span style={{ fontSize: "11px", color: theme.textTertiary }}>{rows.length} tickets · {fileName}</span>
-              <button onClick={handleExport} disabled={generating} style={{
-                background: generating ? theme.bgTertiary : theme.buttonBg, border: `1px solid ${theme.buttonBorder}`,
-                color: generating ? theme.textTertiary : theme.accentSecondary, padding: "7px 18px", borderRadius: "6px",
-                cursor: generating ? "not-allowed" : "pointer", fontSize: "11px", fontFamily: "inherit",
-                letterSpacing: "0.06em", transition: "all 0.3s ease"
-              }}>
-                {generating ? "⏳ Generating…" : "⬇ Export Excel"}
-              </button>
-              <button onClick={() => { setRows(null); setFileName(""); }} style={{
-                background: "transparent", border: `1px solid ${theme.borderLight}`, color: theme.textTertiary,
-                padding: "7px 14px", borderRadius: "6px", cursor: "pointer", fontSize: "11px", fontFamily: "inherit",
-                transition: "all 0.3s ease"
-              }}>✕ Clear</button>
-            </>
-          )}
-        </div>
+        {rows && (
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <span style={{ fontSize: "11px", color: "#4A7FA5" }}>{rows.length} tickets · {fileName}</span>
+            <button onClick={handleExport} disabled={generating} style={{
+              background: generating ? "#0A1520" : "#0F2340", border: "1px solid #2A6A9A",
+              color: generating ? "#4A7FA5" : "#7AB8E0", padding: "7px 18px", borderRadius: "6px",
+              cursor: generating ? "not-allowed" : "pointer", fontSize: "11px", fontFamily: "inherit",
+              letterSpacing: "0.06em", transition: "all 0.2s"
+            }}>
+              {generating ? "⏳ Generating…" : "⬇ Export Excel"}
+            </button>
+            <button onClick={() => { setRows(null); setFileName(""); }} style={{
+              background: "transparent", border: "1px solid #2A3D5A", color: "#4A7FA5",
+              padding: "7px 14px", borderRadius: "6px", cursor: "pointer", fontSize: "11px", fontFamily: "inherit"
+            }}>✕ Clear</button>
+          </div>
+        )}
       </div>
 
       <div style={{ padding: "28px 32px" }}>
@@ -697,18 +661,18 @@ export default function App() {
         {!rows && (
           <div onDrop={onDrop} onDragOver={e => e.preventDefault()}
             style={{
-              border: `1px dashed ${theme.borderLight}`, borderRadius: "12px", padding: "64px",
-              textAlign: "center", marginBottom: "24px", transition: "border-color 0.2s, background 0.3s ease", cursor: "pointer",
-              background: `linear-gradient(135deg,${theme.bgSecondary} 0%,${theme.bg} 100%)`
+              border: "1px dashed #2A3D5A", borderRadius: "12px", padding: "64px",
+              textAlign: "center", marginBottom: "24px", transition: "border-color 0.2s", cursor: "pointer",
+              background: "linear-gradient(135deg,#081521 0%,#060E18 100%)"
             }}
-            onDragEnter={e => e.currentTarget.style.borderColor = theme.textTertiary}
-            onDragLeave={e => e.currentTarget.style.borderColor = theme.borderLight}
+            onDragEnter={e => e.currentTarget.style.borderColor = "#4A7FA5"}
+            onDragLeave={e => e.currentTarget.style.borderColor = "#2A3D5A"}
             onClick={() => document.getElementById("file-in").click()}>
             <input id="file-in" type="file" accept=".xls,.xlsx,.html,.htm" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
             <div style={{ fontSize: "36px", marginBottom: "12px" }}>📊</div>
-            <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: "16px", color: theme.text, marginBottom: "8px" }}>Drop your IQVIA Jira export here</div>
-            <div style={{ fontSize: "12px", color: theme.textTertiary }}>Supports .xls / .xlsx / HTML exports from Jira</div>
-            {loading && <div style={{ marginTop: "16px", color: theme.accentSecondary, fontSize: "12px" }}>⏳ Parsing file…</div>}
+            <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: "16px", color: "#C8D8E8", marginBottom: "8px" }}>Drop your IQVIA Jira export here</div>
+            <div style={{ fontSize: "12px", color: "#4A7FA5" }}>Supports .xls / .xlsx / HTML exports from Jira</div>
+            {loading && <div style={{ marginTop: "16px", color: "#7AB8E0", fontSize: "12px" }}>⏳ Parsing file…</div>}
             {error && <div style={{ marginTop: "16px", color: "#FF8080", fontSize: "12px" }}>⚠ {error}</div>}
           </div>
         )}
@@ -716,20 +680,20 @@ export default function App() {
         {rows && (
           <>
             {/* Tabs */}
-            <div style={{ display: "flex", gap: 0, borderBottom: `1px solid ${theme.border}`, marginBottom: "24px" }}>
+            <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #1E3A5A", marginBottom: "24px" }}>
               {[["pivot", "Pivot Tables"], ["tickets", "All Tickets"]].map(([key, label]) => (
                 <button key={key} onClick={() => setTab(key)} style={{
                   padding: "10px 24px", background: "transparent", border: "none",
-                  borderBottom: tab === key ? `2px solid ${theme.accentSecondary}` : "2px solid transparent",
-                  color: tab === key ? theme.accent : theme.textTertiary, cursor: "pointer",
+                  borderBottom: tab === key ? "2px solid #7AB8E0" : "2px solid transparent",
+                  color: tab === key ? "#E8D5B0" : "#4A7FA5", cursor: "pointer",
                   fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: "12px", letterSpacing: "0.06em",
-                  textTransform: "uppercase", marginBottom: "-1px", transition: "all 0.3s ease"
+                  textTransform: "uppercase", marginBottom: "-1px", transition: "color 0.15s"
                 }}>{label}</button>
               ))}
             </div>
 
-            {tab === "pivot" && <PivotTable rows={rows} theme={theme} />}
-            {tab === "tickets" && <TicketList rows={rows} theme={theme} />}
+            {tab === "pivot" && <PivotTable rows={rows} />}
+            {tab === "tickets" && <TicketList rows={rows} />}
           </>
         )}
       </div>
