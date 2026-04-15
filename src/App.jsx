@@ -212,11 +212,96 @@ async function buildXlsx(rows) {
 
 // ─── pivot table component ────────────────────────────────────────────────────
 
+// ─── multi-select component ──────────────────────────────────────────────────
+
+function MultiSelect({ options, selected, onChange, label, theme, renderOption }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggleOption = (value) => {
+    if (selected.includes(value)) {
+      onChange(selected.filter(v => v !== value));
+    } else {
+      onChange([...selected, value]);
+    }
+  };
+
+  const selectAll = () => onChange(options);
+  const clearAll = () => onChange([]);
+
+  const displayText = selected.length === 0 ? `All ${label}` :
+    selected.length === options.length ? `All ${label}` :
+    `${selected.length} ${label}`;
+
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, color: theme.textSecondary,
+          padding: "5px 10px", borderRadius: "6px", fontSize: "11px", fontFamily: "'DM Mono',monospace",
+          cursor: "pointer", transition: "all 0.3s ease", display: "flex", alignItems: "center", gap: "6px",
+          minWidth: "140px", justifyContent: "space-between"
+        }}
+      >
+        <span>{displayText}</span>
+        <span style={{ fontSize: "9px" }}>▼</span>
+      </button>
+      {isOpen && (
+        <>
+          <div style={{ position: "fixed", inset: 0, zIndex: 999 }} onClick={() => setIsOpen(false)} />
+          <div style={{
+            position: "absolute", top: "100%", left: 0, marginTop: "4px", background: theme.bgModal,
+            border: `1px solid ${theme.border}`, borderRadius: "6px", padding: "8px", minWidth: "200px",
+            maxHeight: "300px", overflowY: "auto", zIndex: 1000, boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+            transition: "all 0.3s ease"
+          }}>
+            <div style={{ display: "flex", gap: "6px", marginBottom: "8px", paddingBottom: "8px", borderBottom: `1px solid ${theme.borderLight}` }}>
+              <button onClick={selectAll} style={{
+                flex: 1, padding: "4px 8px", background: theme.bgTertiary, border: `1px solid ${theme.borderLight}`,
+                color: theme.textTertiary, borderRadius: "4px", fontSize: "10px", cursor: "pointer",
+                transition: "all 0.2s ease"
+              }}>All</button>
+              <button onClick={clearAll} style={{
+                flex: 1, padding: "4px 8px", background: theme.bgTertiary, border: `1px solid ${theme.borderLight}`,
+                color: theme.textTertiary, borderRadius: "4px", fontSize: "10px", cursor: "pointer",
+                transition: "all 0.2s ease"
+              }}>None</button>
+            </div>
+            {options.map(option => {
+              const isSelected = selected.includes(option);
+              return (
+                <div
+                  key={option}
+                  onClick={() => toggleOption(option)}
+                  style={{
+                    padding: "6px 8px", cursor: "pointer", borderRadius: "4px",
+                    background: isSelected ? theme.bgHover : "transparent",
+                    color: isSelected ? theme.accent : theme.textSecondary,
+                    fontSize: "11px", display: "flex", alignItems: "center", gap: "8px",
+                    transition: "all 0.15s ease", marginBottom: "2px"
+                  }}
+                  onMouseEnter={e => !isSelected && (e.currentTarget.style.background = theme.bgTertiary)}
+                  onMouseLeave={e => !isSelected && (e.currentTarget.style.background = "transparent")}
+                >
+                  <span style={{ width: "14px", height: "14px", border: `1px solid ${theme.borderLight}`, borderRadius: "3px",
+                    background: isSelected ? theme.accent : "transparent", display: "flex", alignItems: "center",
+                    justifyContent: "center", fontSize: "10px", color: isSelected ? theme.bg : "transparent" }}>✓</span>
+                  {renderOption ? renderOption(option) : <span>{option}</span>}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function PivotTable({ rows, theme }) {
   const [pivotMode, setPivotMode] = useState("status");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [filterEpic, setFilterEpic] = useState("all");
-  const [filterOwner, setFilterOwner] = useState("all");
+  const [filterStatus, setFilterStatus] = useState([]);
+  const [filterEpic, setFilterEpic] = useState([]);
+  const [filterOwner, setFilterOwner] = useState([]);
 
   const statuses = useMemo(() =>
     [...new Set(rows.map(r => r.Status))].sort((a, b) => statusSortKey(a) - statusSortKey(b)),
@@ -237,9 +322,9 @@ function PivotTable({ rows, theme }) {
     [rows]);
 
   const filtered = useMemo(() => rows.filter(r => {
-    if (filterStatus !== "all" && r.Status !== filterStatus) return false;
-    if (filterEpic !== "all" && (r["Epic Link"] || "") !== filterEpic) return false;
-    if (filterOwner !== "all" && (r.Assignee || "Unassigned") !== filterOwner) return false;
+    if (filterStatus.length > 0 && !filterStatus.includes(r.Status)) return false;
+    if (filterEpic.length > 0 && !filterEpic.includes(r["Epic Link"] || "")) return false;
+    if (filterOwner.length > 0 && !filterOwner.includes(r.Assignee || "Unassigned")) return false;
     return true;
   }), [rows, filterStatus, filterEpic, filterOwner]);
 
@@ -264,21 +349,35 @@ function PivotTable({ rows, theme }) {
             }}>{m === "status" ? "By Status" : "By Owner"}</button>
           ))}
         </div>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={selectStyleThemed}>
-          <option value="all">All Statuses</option>
-          {statuses.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <select value={filterEpic} onChange={e => setFilterEpic(e.target.value)} style={selectStyleThemed}>
-          <option value="all">All Epics</option>
-          {epicLinks.map(el => {
+        <MultiSelect
+          options={statuses}
+          selected={filterStatus}
+          onChange={setFilterStatus}
+          label="Statuses"
+          theme={theme}
+          renderOption={(s) => {
+            const pal = STATUS_PALETTE[s] || { bg: "#1A2B3C", text: "#aaa" };
+            return <span style={{ background: pal.bg, color: pal.text, padding: "2px 6px", borderRadius: "3px", fontSize: "10px" }}>{s}</span>;
+          }}
+        />
+        <MultiSelect
+          options={epicLinks}
+          selected={filterEpic}
+          onChange={setFilterEpic}
+          label="Epics"
+          theme={theme}
+          renderOption={(el) => {
             const { epicNum, comp } = parseEpicInfo(el);
-            return <option key={el} value={el}>{epicNum ? `${epicNum} – ${comp}` : comp}</option>;
-          })}
-        </select>
-        <select value={filterOwner} onChange={e => setFilterOwner(e.target.value)} style={selectStyleThemed}>
-          <option value="all">All Owners</option>
-          {owners.map(owner => <option key={owner} value={owner}>{owner}</option>)}
-        </select>
+            return <span style={{ fontSize: "10px" }}>{epicNum ? `${epicNum} – ${comp.slice(0, 30)}` : comp.slice(0, 30)}</span>;
+          }}
+        />
+        <MultiSelect
+          options={owners}
+          selected={filterOwner}
+          onChange={setFilterOwner}
+          label="Owners"
+          theme={theme}
+        />
         <span style={{ color: theme.textTertiary, fontSize: "11px", fontFamily: "inherit" }}>
           {filtered.length} tickets
         </span>
@@ -344,7 +443,7 @@ function StatusPivot({ rows, statuses, epicLinks, onCellClick, theme }) {
     transition: "all 0.3s ease"
   });
 
-  const tdStyle = { 
+  const tdStyle = {
     padding: "6px 12px", borderBottom: `1px solid ${theme.borderLight}`, verticalAlign: "middle", fontSize: "11px",
     transition: "all 0.3s ease"
   };
@@ -421,7 +520,7 @@ function OwnerPivot({ rows, statuses, owners, onCellClick, theme }) {
     transition: "all 0.3s ease"
   });
 
-  const tdStyle = { 
+  const tdStyle = {
     padding: "6px 12px", borderBottom: `1px solid ${theme.borderLight}`, verticalAlign: "middle", fontSize: "11px",
     transition: "all 0.3s ease"
   };
@@ -480,8 +579,8 @@ function OwnerPivot({ rows, statuses, owners, onCellClick, theme }) {
 
 function TicketList({ rows, theme }) {
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [filterEpic, setFilterEpic] = useState("all");
+  const [filterStatus, setFilterStatus] = useState([]);
+  const [filterEpic, setFilterEpic] = useState([]);
   const [sortKey, setSortKey] = useState("Status");
 
   const statuses = useMemo(() => [...new Set(rows.map(r => r.Status))].sort((a, b) => statusSortKey(a) - statusSortKey(b)), [rows]);
@@ -489,8 +588,8 @@ function TicketList({ rows, theme }) {
 
   const filtered = useMemo(() => {
     let r = rows;
-    if (filterStatus !== "all") r = r.filter(t => t.Status === filterStatus);
-    if (filterEpic !== "all") r = r.filter(t => (t["Epic Link"] || "") === filterEpic);
+    if (filterStatus.length > 0) r = r.filter(t => filterStatus.includes(t.Status));
+    if (filterEpic.length > 0) r = r.filter(t => filterEpic.includes(t["Epic Link"] || ""));
     if (search) {
       const q = search.toLowerCase();
       r = r.filter(t => t.Key?.toLowerCase().includes(q) || t.Summary?.toLowerCase().includes(q) || t.Assignee?.toLowerCase().includes(q));
@@ -514,7 +613,7 @@ function TicketList({ rows, theme }) {
     transition: "all 0.3s ease"
   });
 
-  const tdStyle = { 
+  const tdStyle = {
     padding: "6px 12px", borderBottom: `1px solid ${theme.borderLight}`, verticalAlign: "middle", fontSize: "11px",
     transition: "all 0.3s ease"
   };
@@ -524,14 +623,28 @@ function TicketList({ rows, theme }) {
       <div style={{ display: "flex", gap: "10px", marginBottom: "16px", flexWrap: "wrap", alignItems: "center" }}>
         <input placeholder="Search key, summary, assignee…" value={search} onChange={e => setSearch(e.target.value)}
           style={{ ...selectStyleThemed, width: "260px", outline: "none" }} />
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={selectStyleThemed}>
-          <option value="all">All Statuses</option>
-          {statuses.map(s => <option key={s}>{s}</option>)}
-        </select>
-        <select value={filterEpic} onChange={e => setFilterEpic(e.target.value)} style={selectStyleThemed}>
-          <option value="all">All Epics</option>
-          {epicLinks.map(el => { const { epicNum, comp } = parseEpicInfo(el); return <option key={el} value={el}>{epicNum ? `${epicNum} – ${comp}` : comp}</option>; })}
-        </select>
+        <MultiSelect
+          options={statuses}
+          selected={filterStatus}
+          onChange={setFilterStatus}
+          label="Statuses"
+          theme={theme}
+          renderOption={(s) => {
+            const pal = STATUS_PALETTE[s] || { bg: "#1A2B3C", text: "#aaa" };
+            return <span style={{ background: pal.bg, color: pal.text, padding: "2px 6px", borderRadius: "3px", fontSize: "10px" }}>{s}</span>;
+          }}
+        />
+        <MultiSelect
+          options={epicLinks}
+          selected={filterEpic}
+          onChange={setFilterEpic}
+          label="Epics"
+          theme={theme}
+          renderOption={(el) => {
+            const { epicNum, comp } = parseEpicInfo(el);
+            return <span style={{ fontSize: "10px" }}>{epicNum ? `${epicNum} – ${comp.slice(0, 30)}` : comp.slice(0, 30)}</span>;
+          }}
+        />
         <select value={sortKey} onChange={e => setSortKey(e.target.value)} style={selectStyleThemed}>
           {["Status", "Key", "Assignee"].map(k => <option key={k}>Sort: {k}</option>)}
         </select>
